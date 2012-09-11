@@ -208,10 +208,12 @@ $config = $require('yaml!./resources/config.yml');
 
 ## More info
 
-As the source code of this "CommonJS for PHP" library is shorter than this README, you can have a look at it
+As the source code of this "CommonJS for PHP" library is shorter than this README, you can
+[have a look at it](https://github.com/DrBenton/CommonJSForPHP/blob/master/commonjs.php)
 for further information :-)
 
-You can look at Unit Tests too, since they cover a rather large scope of use cases.
+You can look at [Unit Tests](https://github.com/DrBenton/CommonJSForPHP/blob/master/tests/CommonJSTest.php)
+too, since they cover a rather large scope of use cases.
 
 ## License
 (The MIT License)
