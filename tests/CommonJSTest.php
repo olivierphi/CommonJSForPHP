@@ -117,9 +117,12 @@ class CommonJSTest extends \PHPUnit_Framework_TestCase
         $require = $commonJs['require'];
         $commonJs['config']['basePath'] = __DIR__;
 
+        $expectedId = '/module-dir/module-id-and-uri-exporter';
+        $expectedUri = realpath(__DIR__.'/module-dir/module-id-and-uri-exporter.php');
+
         $result = $require('./module-dir/module-id-and-uri-exporter');
-        $this->assertEquals('/module-dir/module-id-and-uri-exporter', $result['id']);
-        $this->assertEquals(realpath(__DIR__.'./module-dir/module-id-and-uri-exporter.php'), $result['uri']);
+        $this->assertEquals($expectedId, $result['id']);
+        $this->assertEquals($expectedUri, $result['uri']);
     }
 
 }
