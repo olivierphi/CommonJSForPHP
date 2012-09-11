@@ -2,7 +2,7 @@
 
 A simple CommonJS spec implementation for PHP 5.3+.
 
-It fits in a single PHP file (170 lines of code), and allows a simple and easy application structure. It supports "a la RequireJS"
+It fits in a single PHP file (180 lines of code), and allows a simple and easy application structure. It supports "a la RequireJS"
 plugins too (a simple "JSON decoder" is bundled as a sample).
 
 ## Why CommonJS for PHP ?
@@ -120,7 +120,7 @@ $logger = $require('app/logger');
 ### require()
 
 Triggers the resolution of a Module. All Modules resolutions are triggered only once, the first time they are requested.
-All subsequent calls to this Module will return the same value, cached.
+All subsequent calls to this Module will return the same value, retrieved from an internal cache.
 
 They are 3 types of Module resolutions:
 * Modules mapped to a Closure through the ```define()``` function. When the required module path matches a previously defined
@@ -166,8 +166,15 @@ In this "Closure sandbox", your Module have automatically access to the followin
 * **$define**: the ```$define``` function. You can dynamically create new "mapped to Closures" Modules definitions in your Modules.
 * **$exports**: this is an empty Array. Add key/values couples to this Array, and they're will be automatically available
 in other Modules.
-* **$module**: only used for direct Modules export value for the moment. If you want to export a single value from a Module,
+* **$module**: is mainly used for direct Modules export value. If you want to export a single value from a Module,
 use ```$module['exports'] = $mySingleExportedValue;```.
+Additionally, you have access to ```$module['id']``` and
+```$module['uri']``` properties, according to [CommonJS spec](http://wiki.commonjs.org/wiki/Modules/1.1.1).
+```uri``` is the [realpath](php.net/manual/fr/function.realpath.php) of the Module file,
+and ```id``` is the absolute Module path of the Module :
+
+> The "id" property must be such that require(module.id) will return the exports object from which the module.id originated
+> (That is to say module.id can be passed to another module, and requiring that must return the original module).
 
 ### Plugins
 
@@ -186,7 +193,7 @@ same way than Modules : they can be relative to the Module which triggers the pl
 
 // app/plugins/commonsjs-plugin.yaml.php
 
-$yamlParser = new Symfony\Component\Yaml\Parser();
+$yamlParser = new \Symfony\Component\Yaml\Parser();
 return $yamlParser->parse(file_get_contents($resourcePath));
 
 
@@ -196,12 +203,14 @@ $commonJs['plugins']['yaml'] = __DIR__ . '/app/plugins/commonsjs-plugin.yaml.php
 
 // app/config.php
 
-$config = $require('yaml!./resources/config.yaml');
+$config = $require('yaml!./resources/config.yml');
 ```
 
 ## More info
 
-Since the source code of CommonJS for PHP is shorter than this README, you can have a look at it for further information :-)
+As the source code of this "CommonJS for PHP" library is shorter than this README, you can have a look at it
+for further information :-)
+
 You can look at Unit Tests too, since they cover a rather large scope of use cases.
 
 ## License
@@ -209,8 +218,14 @@ You can look at Unit Tests too, since they cover a rather large scope of use cas
 
 Copyright (c) 2012 Olivier Philippon <https://github.com/DrBenton>
 
-Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the 'Software'), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation
+files (the 'Software'), to deal in the Software without restriction, including without limitation the rights to use, copy,
+modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the
+Software is furnished to do so, subject to the following conditions:
 
 The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
 
-THE SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+THE SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO
+THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS
+OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.

@@ -46,10 +46,16 @@ $commonJsAPI = call_user_func(function()
         return realpath($fullModulePath);
     };
 
-    $_triggerModule = function ($moduleFilePath) use (&$require, &$define, &$_currentResolvedModuleDir)
+    $_triggerModule = function ($moduleFilePath) use (&$config, &$require, &$define, &$_currentResolvedModuleDir)
     {
         // Env setup...
         $module = array();
+        $module['id'] = str_replace(
+            array($config['basePath'], DIRECTORY_SEPARATOR, $config['modulesExt']),
+            array('', '/', ''),
+            $moduleFilePath
+        );
+        $module['uri'] = $moduleFilePath;
         $exports = array();
         $moduleTrigger = function () use ($moduleFilePath, &$require, &$define, &$module, &$exports)
         {

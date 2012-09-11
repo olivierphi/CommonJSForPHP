@@ -42,7 +42,6 @@ class CommonJSTest extends \PHPUnit_Framework_TestCase
         $commonJs['config']['basePath'] = __DIR__;
 
         $this->assertEquals(300, $require('./module-dir/relative-module'));
-        $this->assertEquals(500, $require('./module-dir/package1/relative-upper-module-consumer'));
     }
 
     public function testRecursiveModulesResolution ()
@@ -52,6 +51,7 @@ class CommonJSTest extends \PHPUnit_Framework_TestCase
         $commonJs['config']['basePath'] = __DIR__;
 
         $this->assertEquals(400, $require('module-dir/relative-module-consumer'));
+        $this->assertEquals(500, $require('./module-dir/package1/relative-upper-module-consumer'));
     }
 
     public function testCommonJsDefine ()
@@ -70,7 +70,6 @@ class CommonJSTest extends \PHPUnit_Framework_TestCase
             $module['exports'] = 20;
         });
         $this->assertEquals(20, $require('definition2'));
-
     }
 
     public function testModuleCodeIsTriggeredOnlyOnce ()
@@ -110,6 +109,17 @@ class CommonJSTest extends \PHPUnit_Framework_TestCase
         $commonJs['plugins']['fileRev'] = __DIR__ .'/module-dir/custom-extensions/commonjs-ext.file-reverser.php';
 
         $this->assertEquals('notneBrD', $require('fileRev!./module-dir/resources/simple-text.txt'));
+    }
+
+    public function testModuleIdAndUri ()
+    {
+        $commonJs = include __DIR__ . '/../commonjs.php';
+        $require = $commonJs['require'];
+        $commonJs['config']['basePath'] = __DIR__;
+
+        $result = $require('./module-dir/module-id-and-uri-exporter');
+        $this->assertEquals('/module-dir/module-id-and-uri-exporter', $result['id']);
+        $this->assertEquals(realpath(__DIR__.'./module-dir/module-id-and-uri-exporter.php'), $result['uri']);
     }
 
 }
