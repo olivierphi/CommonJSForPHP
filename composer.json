@@ -1,0 +1,25 @@
+{
+    "name": "dr-benton/commonjs",
+    "type": "library",
+    "description": "A simple CommonJS spec implementation for PHP 5.3+",
+    "keywords": ["commonjs", "module", "pattern"],
+    "homepage": "https://github.com/DrBenton/CommonJSForPHP",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Olivier Philippon",
+            "homepage": "https://github.com/DrBenton"
+        }
+    ],
+    "require": {
+        "php": ">=5.3"
+    },
+    "autoload": {
+        "classmap": ["commonjs.php"]
+    },
+    "extra": {
+        "branch-alias": {
+            "dev-master": "1.0-dev"
+        }
+    }
+}
