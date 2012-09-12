@@ -2,6 +2,8 @@
 
 A simple CommonJS spec implementation for PHP 5.3+.
 
+[![build status](https://secure.travis-ci.org/DrBenton/CommonJSForPHP.png)](http://travis-ci.org/DrBenton/CommonJSForPHP)
+
 It fits in a single PHP file (≈ 150 lines of effective code) and allows a simple and easy application structure, based on
 the CommonJS "Module" design pattern. You might already know this pattern if you have ever worked with
 [Node.js](http://nodejs.org/) or [RequireJS](http://requirejs.org/).
@@ -10,7 +12,7 @@ It supports "a la RequireJS" plugins too (a simple "JSON decoder" is bundled as 
 
 ## Why CommonJS for PHP ?
 
-* Between two beautiful projects based on Symfony, Zend Framework, Slim, Silex or whatever modern
+* Between 2 beautiful projects based on Symfony, Zend Framework, Slim, Silex or whatever modern
 [PSR-0](https://github.com/php-fig/fig-standards/blob/master/accepted/PSR-0.md) heavy Object Oriented framework, have
 some rest with simple _good ol' procedural_ PHP codestyle!
 * Feel comfortable in PHP when you're back from a Node.js or front-end [AMD](https://github.com/amdjs/amdjs-api/wiki/AMD) project.
