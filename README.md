@@ -2,6 +2,8 @@
 
 A simple CommonJS spec implementation for PHP 5.3+.
 
+[![build status](https://secure.travis-ci.org/DrBenton/CommonJSForPHP.png)](http://travis-ci.org/DrBenton/CommonJSForPHP)
+
 It fits in a single PHP file (≈ 150 lines of effective code), and allows a simple and easy application structure, based on
 the CommonJS "Module" design pattern. You might already know this pattern if you have ever worked with
 [Node.js](http://nodejs.org/) or [RequireJS](http://requirejs.org/).
