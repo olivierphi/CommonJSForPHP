@@ -14,9 +14,6 @@
     "require": {
         "php": ">=5.3"
     },
-    "autoload": {
-        "classmap": ["commonjs.php"]
-    },
     "extra": {
         "branch-alias": {
             "dev-master": "1.0-dev"

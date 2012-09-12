@@ -2,23 +2,27 @@
 
 A simple CommonJS spec implementation for PHP 5.3+.
 
-It fits in a single PHP file (180 lines of code), and allows a simple and easy application structure. It supports "a la RequireJS"
-plugins too (a simple "JSON decoder" is bundled as a sample).
+It fits in a single PHP file (≈ 150 lines of effective code), and allows a simple and easy application structure, based on
+the CommonJS "Module" design pattern. You might already know this pattern if you have ever worked with
+[Node.js](http://nodejs.org/) or [RequireJS](http://requirejs.org/).
+
+It supports "a la RequireJS" plugins too (a simple "JSON decoder" is bundled as a sample).
 
 ## Why CommonJS for PHP ?
 
-* Between two beautiful OOP projects based on Zend Framework, Symfony, Slim, Silex or whatever modern
-[PSR-0](https://github.com/php-fig/fig-standards/blob/master/accepted/PSR-0.md) heavy Object Oriented framework, take
-a nap with simple "good old procedural" PHP codestyle!
+* Between two beautiful OOP projects based on Symfony, Zend Framework, Slim, Silex or whatever modern
+[PSR-0](https://github.com/php-fig/fig-standards/blob/master/accepted/PSR-0.md) heavy Object Oriented framework, have
+some rest with simple "good ol' procedural" PHP codestyle!
 * Feel comfortable in PHP when you're back from a Node.js or front-end [AMD](https://github.com/amdjs/amdjs-api/wiki/AMD) project.
-* Acts as a tiny Service Locator and lazy-loaded dependencies resolver.
+* CommonJS Module pattern acts as a very simple -but efficient- Service Locator and lazy-loaded dependencies resolver.
 * Have fun with isolated PHP code parts! Every Module runs in a automatically generated Closure, and you can freely create
 variables and Closures without polluting the PHP global namespaces.
 * All your Modules code run in a "Closure sandbox", and Modules communicate between each other only through their
 ```$require()``` function and ```$exports``` variable.
 * Every Module content is run only once - the first time it is required.
-* Is perfectly interoperable with PSR-0 classes.
-* Can be useful for quick little projects.
+* CommonJS for PHP is perfectly interoperable with PSR-0 classes. You can use Symfony 2 or Zend Framework components in
+your Modules, and use Composer as well.
+* This CommonJS implementation for PHP can be used as a micro-framework for quick little projects.
 
 The code is willfully 100% procedural and Closures-based - this way, this CommonJS spec implementation code looks
 like Javascript code :-)
@@ -102,10 +106,10 @@ echo $config['debug'];//--> 'true'
 
 The triggered Closure can accept up to 3 injected params: ```$require```, ```$exports``` and ```$module```.
 ```$require``` let you require other modules from your Closure, while ```$exports``` and ```$module``` allows you
-to define the Module value resolution in a "CommonJS" way:
+to define the Module value resolution in a "CommonJS way":
 
 ```php
-$define('app/logger', function($require, $exports, $module) {
+$define('app/logger', function($require, &$exports, &$module) {
     $config = $require('config');
     $logger = new Monolog\Logger('app');
     if ($config['debug']) {
@@ -116,6 +120,11 @@ $define('app/logger', function($require, $exports, $module) {
 
 $logger = $require('app/logger');
 ```
+
+If you want to use that form instead of a simple ```return```, be aware that because call-time pass by reference
+has been removed in PHP 5.4, you have to use ```&$exports``` and ```&$module``` and not just just
+```$exports / $module``` in your definition Closure.
+Although it is possible to omit the "&" in PHP 5.3, it's better to think about the future :-)
 
 ### require()
 
@@ -188,6 +197,8 @@ Like Modules, plugins are triggered in a generated Closure, and run in their own
 while ```$resourcePath``` is the part of the required Module path after the "!". The resource path is resolved in the
 same way than Modules : they can be relative to the Module which triggers the plugin or absolute.
 
+Note that unlike ```$require```-ed Modules, which are triggered only once, plugins are triggered each time they are requested.
+
 ```php
 // A YAML sample plugin
 
@@ -212,8 +223,8 @@ As the source code of this "CommonJS for PHP" library is shorter than this READM
 [have a look at it](https://github.com/DrBenton/CommonJSForPHP/blob/master/commonjs.php)
 for further information :-)
 
-You can look at [Unit Tests](https://github.com/DrBenton/CommonJSForPHP/blob/master/tests/CommonJSTest.php)
-too, since they cover a rather large scope of use cases.
+You can also look at [Unit Tests](https://github.com/DrBenton/CommonJSForPHP/blob/master/tests/CommonJSTest.php),
+since they cover a rather large scope of use cases.
 
 ## License
 (The MIT License)

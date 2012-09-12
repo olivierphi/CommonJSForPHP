@@ -65,11 +65,17 @@ class CommonJSTest extends \PHPUnit_Framework_TestCase
         $define('definition1', function () {
            return 10;
         });
-        $define('definition2', function ($require, $exports, $module) use ($that) {
+        $define('definition2', function ($require, &$exports, &$module) use ($that) {
             $that->assertEquals(10, $require('definition1'));
             $module['exports'] = 20;
         });
+        $define('definition3', function ($require, &$exports, &$module) use ($that) {
+            $that->assertEquals(20, $require('definition2'));
+            $exports['value1'] = 30;
+        });
         $this->assertEquals(20, $require('definition2'));
+        $definition3 = $require('definition3');
+        $this->assertEquals(30, $definition3['value1']);
     }
 
     public function testModuleCodeIsTriggeredOnlyOnce ()

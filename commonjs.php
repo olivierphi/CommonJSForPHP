@@ -16,10 +16,12 @@ $commonJsAPI = call_user_func(function()
     $_modulesRegistry = array();
 
     $config = array(
+        // Default config
         'basePath' => __DIR__,
         'modulesExt' => '.php',
     );
     $plugins = array(
+        // Default plugins
         'json' => __DIR__ . '/plugins/commonsjs-plugin.json.php'
     );
 
@@ -27,6 +29,7 @@ $commonJsAPI = call_user_func(function()
 
     $_getResourceFullPath = function ($modulePath, $fileExtToAdd = '') use (&$config, &$_currentResolvedModuleDir)
     {
+        // Relative or absolute path?
         if ('./' === substr($modulePath, 0, 2) || '../' === substr($modulePath, 0, 3)) {
             // Relative path
             if (null === $_currentResolvedModuleDir) {
@@ -68,6 +71,7 @@ $commonJsAPI = call_user_func(function()
         call_user_func($moduleTrigger);
         $_currentResolvedModuleDir = $previousResolvedModuleDir;//..and restore!
 
+        // Result analysis
         if (isset($module['exports'])) {
 
             return $module['exports'];
@@ -77,16 +81,21 @@ $commonJsAPI = call_user_func(function()
         }
     };
 
-    $_triggerDefine = function ($definitionPath) use (&$_definitionsRegistry, &$require) {
+    $_triggerDefine = function ($definitionPath) use (&$_definitionsRegistry, &$require)
+    {
+        // Env setup...
         $module = array();
         $exports = array();
         $defineArgs = array(&$require, &$exports, &$module);
+
+        // Go!
         $definitionResult = call_user_func_array($_definitionsRegistry[$definitionPath], $defineArgs);
 
+        // Result analysis
         if (!$definitionResult) {
             if (isset($module['exports'])) {
                 $definitionResult = $module['exports'];
-            } else {
+            } else if (sizeof($exports) > 0) {
                 $definitionResult = $exports;
             }
         }
