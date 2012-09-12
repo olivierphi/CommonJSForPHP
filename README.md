@@ -2,9 +2,7 @@
 
 A simple CommonJS spec implementation for PHP 5.3+.
 
-[![build status](https://secure.travis-ci.org/DrBenton/CommonJSForPHP.png)](http://travis-ci.org/DrBenton/CommonJSForPHP)
-
-It fits in a single PHP file (≈ 150 lines of effective code), and allows a simple and easy application structure, based on
+It fits in a single PHP file (≈ 150 lines of effective code) and allows a simple and easy application structure, based on
 the CommonJS "Module" design pattern. You might already know this pattern if you have ever worked with
 [Node.js](http://nodejs.org/) or [RequireJS](http://requirejs.org/).
 
@@ -12,18 +10,19 @@ It supports "a la RequireJS" plugins too (a simple "JSON decoder" is bundled as 
 
 ## Why CommonJS for PHP ?
 
-* Between two beautiful OOP projects based on Symfony, Zend Framework, Slim, Silex or whatever modern
+* Between two beautiful projects based on Symfony, Zend Framework, Slim, Silex or whatever modern
 [PSR-0](https://github.com/php-fig/fig-standards/blob/master/accepted/PSR-0.md) heavy Object Oriented framework, have
-some rest with simple "good ol' procedural" PHP codestyle!
+some rest with simple _good ol' procedural_ PHP codestyle!
 * Feel comfortable in PHP when you're back from a Node.js or front-end [AMD](https://github.com/amdjs/amdjs-api/wiki/AMD) project.
-* CommonJS Module pattern acts as a very simple -but efficient- Service Locator and lazy-loaded dependencies resolver.
+* CommonJS Module pattern acts as a very simple Service Locator and lazy-loaded dependencies resolver.
 * Have fun with isolated PHP code parts! Every Module runs in a automatically generated Closure, and you can freely create
-variables and Closures without polluting the PHP global namespaces.
+variables and Closures within your Modules without without fearing a pollution of the PHP global space, nor collisions with
+other Modules code.
 * All your Modules code run in a "Closure sandbox", and Modules communicate between each other only through their
 ```$require()``` function and ```$exports``` variable.
 * Every Module content is run only once - the first time it is required.
-* CommonJS for PHP is perfectly interoperable with PSR-0 classes. You can use Symfony 2 or Zend Framework components in
-your Modules, and use Composer as well.
+* CommonJS for PHP is perfectly interoperable with PSR-0 classes. You can use Symfony 2 or Zend Framework or yet other
+components in your Modules. It can be used with libraries managed by Composer as well.
 * This CommonJS implementation for PHP can be used as a micro-framework for quick little projects.
 
 The code is willfully 100% procedural and Closures-based - this way, this CommonJS spec implementation code looks
@@ -35,13 +34,13 @@ like Javascript code :-)
 // index.php
 
 // CommonJs setup
-$commonJs = include './commonjs.php';
-$define = $commonJs['define'];
-$require = $commonJs['require'];
-$commonJs['config']['basePath'] = __DIR__ '/modules';
+$commonJS = include './commonjs.php';
+$define = $commonJS['define'];
+$require = $commonJS['require'];
+$commonJS['config']['basePath'] = __DIR__ '/modules';
 
 // Custom plugin?
-$commonJs['plugins']['yaml'] = __DIR__ . '/commonsjs-plugin.yaml.php';
+$commonJS['plugins']['yaml'] = __DIR__ . '/commonsjs-plugin.yaml.php';
 
 // Modules are files ; but you can define "modules-as-Closures" too
 $define('logger', function($require) {
@@ -63,9 +62,9 @@ $requestBridge = $require('../vendor/symfony-bridge/request');
 $router = $require('app/router');
 
 $request = $requestBridge->createFromGlobals();
-$targetControllerModule = $router->resolveRequest($request);
-$config['debug'] && $logger('** $targetController='.$targetController);
-$require($targetControllerModule);
+list($targetControllerModule, $targetAction) = $router->resolveRequest($request);
+$config['debug'] && $logger('** $targetControllerModule='.$targetControllerModule);
+$require($targetControllerModule)->$targetAction();
 ```
 
 ## API
@@ -75,24 +74,25 @@ $require($targetControllerModule);
 To initialize the CommonJS environment you simply have to do this:
 
 ```php
-$commonJs = include './commonjs.php';
+$commonJS = include './commonjs.php';
 ```
 
-The ```$commonJs``` returned Array contains the following keys :
-* **define**: the CommonJS ```define()``` Closure ; alias it with ```$define = $commonJs['define'];```
-* **require**: the CommonJS ```require()``` Closure ; alias it with ```$require = $commonJs['require'];```
-* **config**: a simple config Array with 2 keys:
+The ```$commonJS``` returned associative Array contains the following keys :
+* **define**: the CommonJS ```define()``` Closure ; outside Modules, you can alias it with ```$define = $commonJS['define'];```
+* **require**: the CommonJS ```require()``` Closure ; outside Modules, you can alias it with ```$require = $commonJS['require'];```
+* **config**: a simple config associative Array with 2 keys:
     * **basePath**: the base path of your Modules. Every Module you ```require()``` without a relative path will be located
     in this directory path. Default is the _commonjs.php_'s ```__DIR__```
     * **modulesExt**: the extension to add to the requested Modules path. Default: _'.php'_
-* **plugins**: this Array is the CommonJS "a la RequireJS" plugins registry. Each key is a plugin prefix, each value is
-the path of a plugin file. See [Plugins](#plugins) section for more details.
+* **plugins**: this associative Array is the CommonJS for PHP "a la RequireJS" plugins registry. Keys are plugin prefixes,
+values are paths to plugins files. See [Plugins](#plugins) section for more details.
 
 ### define()
 
 The ```define()``` function lets you create Modules resolved by Closures. The first param is the name of the Module
 you define, and the second one is a Closure. When this Module is requested for the first time, this Closure is triggered
-and its return value is used a the Module value resolution.
+and its return value is used a the Module value resolution. Subsequent calls will return the same value, managed by
+an internal data cache.
 
 ```php
 $define('config', function() {
@@ -131,7 +131,7 @@ Although it is possible to omit the "&" in PHP 5.3, it's better to think about t
 ### require()
 
 Triggers the resolution of a Module. All Modules resolutions are triggered only once, the first time they are requested.
-All subsequent calls to this Module will return the same value, retrieved from an internal cache.
+All subsequent calls to this Module will return the same value, retrieved from an internal data cache.
 
 They are 3 types of Module resolutions:
 * Modules mapped to a Closure through the ```define()``` function. When the required module path matches a previously defined
@@ -150,29 +150,29 @@ See [Plugins](#plugins) section for more detail.
 ```php
 // All Module types:
 
-// Closure-mapped Module
+// Closure-mapped Module:
 $define('debug', function() { return true; });
 $debug = $require('debug');
 
-// Absolute Module file resolution (absolute, but relative to the CommonJS "config['basePath']" path)
+// Absolute Module file resolution: (absolute, but relative to the CommonJS "config['basePath']" path)
 $logger = $require('app/logger');
 
-// Relative Module file resolution (relative to the Module who calls "$require()"
+// Relative Module file resolution: (relative to the Module which calls "$require()")
 $logger = $require('../logger');
 
-// Plugin call
+// Plugin call:
 $myModuleConfig = $require('json!./module-config.json');
 ```
 
 ### Modules scope
 
-This is the earth of the CommonJS coolness! Every Module is isolated from others Modules, and interact with them only
-through ```$require()``` and ```$exports```.
+This is the heart of the CommonJS coolness! Every Module is isolated from others Modules, and interact with them only
+through its ```$require()``` method (for input) and its ```$exports``` array (for output).
 
 In a Module you can create vars and Closures without fearing a pollution of the PHP global space, nor collisions with
 other Modules code. Every time a Module is triggered, its code is automatically embedded is a generated PHP Closure.
 
-In this "Closure sandbox", your Module have automatically access to the following vars:  (and only to them)
+In this "Closure sandbox", your Module have automatically access to the following vars:  **(and only to them)**
 * **$require**: the ```$require``` function. Let's you access to other Modules exports.
 * **$define**: the ```$define``` function. You can dynamically create new "mapped to Closures" Modules definitions in your Modules.
 * **$exports**: this is an empty Array. Add key/values couples to this Array, and they're will be automatically available
@@ -211,7 +211,7 @@ return $yamlParser->parse(file_get_contents($resourcePath));
 
 
 // app/bootstrap.php
-$commonJs['plugins']['yaml'] = __DIR__ . '/app/plugins/commonsjs-plugin.yaml.php';
+$commonJS['plugins']['yaml'] = __DIR__ . '/app/plugins/commonsjs-plugin.yaml.php';
 
 
 // app/config.php

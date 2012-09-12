@@ -92,7 +92,7 @@ $commonJsAPI = call_user_func(function()
         $definitionResult = call_user_func_array($_definitionsRegistry[$definitionPath], $defineArgs);
 
         // Result analysis
-        if (!$definitionResult) {
+        if (null === $definitionResult) {
             if (isset($module['exports'])) {
                 $definitionResult = $module['exports'];
             } else if (sizeof($exports) > 0) {
