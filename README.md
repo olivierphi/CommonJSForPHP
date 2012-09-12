@@ -8,13 +8,23 @@ It fits in a single PHP file (≈ 150 lines of effective code) and allows a simp
 the CommonJS "Module" design pattern. You might already know this pattern if you have ever worked with
 [Node.js](http://nodejs.org/) or [RequireJS](http://requirejs.org/).
 
-It supports "a la RequireJS" plugins too (a simple "JSON decoder" is bundled as a sample).
+From [JavaScript Growing Up](http://fr.slideshare.net/davidpadbury/javascript-growing-up):
+> CommonJS introduced a simple API for dealing with modules:
+
+> * "require" for importing a module.
+> * "exports" for exposing stuff from a module
+>
+
+
+This PHP implementation also supports two features inspired by RequireJS:
+* _defined-by-Closures_ Modules, with the [$define](#define) function
+* resources [Plugins](#plugins) (a simple "JSON decoder" is bundled as a sample).
 
 ## Why CommonJS for PHP ?
 
 * Between 2 beautiful projects based on Symfony, Zend Framework, Slim, Silex or whatever modern
 [PSR-0](https://github.com/php-fig/fig-standards/blob/master/accepted/PSR-0.md) heavy Object Oriented framework, have
-some rest with simple _good ol' procedural_ PHP codestyle!
+some rest with simple "good ol' procedural" PHP codestyle!
 * Feel comfortable in PHP when you're back from a Node.js or front-end [AMD](https://github.com/amdjs/amdjs-api/wiki/AMD) project.
 * CommonJS Module pattern acts as a very simple Service Locator and lazy-loaded dependencies resolver.
 * Have fun with isolated PHP code parts! Every Module runs in a automatically generated Closure, and you can freely create
@@ -33,8 +43,7 @@ like Javascript code :-)
 ## Synopsis
 
 ```php
-// index.php
-
+// ******************************* file "index.php"
 // CommonJs setup
 $commonJS = include './commonjs.php';
 $define = $commonJS['define'];
@@ -55,9 +64,11 @@ $define('logger', function($require) {
 $require('app/bootstrap');
 
 
-// modules/app/bootstrap.php
-// (note that "$define", "$require", "$exports" and "$module" are automatically globally defined in the Module)
-
+// ******************************* file "modules/app/bootstrap.php"
+/**
+ * Note that "$define", "$require", "$exports" and "$module"
+ * are automatically globally defined in the Module!
+ */
 $config = $require('yaml!../config/config.yml');//we use the YAML plugin with a relative path
 $logger = $require('logger');
 $requestBridge = $require('../vendor/symfony-bridge/request');
@@ -206,24 +217,22 @@ Note that unlike ```$require```-ed Modules, which are triggered only once, plugi
 ```php
 // A YAML sample plugin
 
-// app/plugins/commonsjs-plugin.yaml.php
-
+// ******************************* file "app/plugins/commonsjs-plugin.yaml.php"
 $yamlParser = new \Symfony\Component\Yaml\Parser();
 return $yamlParser->parse(file_get_contents($resourcePath));
 
 
-// app/bootstrap.php
+// ******************************* file "app/bootstrap.php"
 $commonJS['plugins']['yaml'] = __DIR__ . '/app/plugins/commonsjs-plugin.yaml.php';
 
 
-// app/config.php
-
+// ******************************* file "app/config.php"
 $config = $require('yaml!./resources/config.yml');
 ```
 
 ## More info
 
-As the source code of this "CommonJS for PHP" library is shorter than this README, you can
+As the source code of this "CommonJS for PHP" library is a lot shorter than this README, you can
 [have a look at it](https://github.com/DrBenton/CommonJSForPHP/blob/master/commonjs.php)
 for further information :-)
 
