@@ -131,4 +131,12 @@ class CommonJSTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals($expectedUri, $result['uri']);
     }
 
+    public function testFolderAsModule ()
+    {
+        $commonJs = include __DIR__ . '/../commonjs.php';
+        $require = $commonJs['require'];
+        $commonJs['config']['basePath'] = __DIR__;
+
+        $this->assertEquals(500, $require('/module-dir/folder-as-module'));
+    }
 }

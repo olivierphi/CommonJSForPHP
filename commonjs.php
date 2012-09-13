@@ -9,7 +9,8 @@
  */
 
 // Our API is entirely embedded in this "a la Javascript" self executing function
-$commonJsAPI = call_user_func(function()
+// This way, we do not create any single global variable or function
+return call_user_func(function()
 {
 
     $_definitionsRegistry = array();
@@ -19,6 +20,7 @@ $commonJsAPI = call_user_func(function()
         // Default config
         'basePath' => __DIR__,
         'modulesExt' => '.php',
+        'folderAsModuleFileName' => 'index.php',
     );
     $plugins = array(
         // Default plugins
@@ -29,13 +31,14 @@ $commonJsAPI = call_user_func(function()
 
     $_getResourceFullPath = function ($modulePath, $fileExtToAdd = '') use (&$config, &$_currentResolvedModuleDir)
     {
+        if (null === $_currentResolvedModuleDir) {
+            //defaults to $config['basePath'] if we are not already in a Module context
+            $_currentResolvedModuleDir = $config['basePath'];
+        }
+
         // Relative or absolute path?
         if ('./' === substr($modulePath, 0, 2) || '../' === substr($modulePath, 0, 3)) {
             // Relative path
-            if (null === $_currentResolvedModuleDir) {
-                //defaults to $config['basePath'] if we are not already in a Module context
-                $_currentResolvedModuleDir = $config['basePath'];
-            }
             $fullModulePath = $_currentResolvedModuleDir . DIRECTORY_SEPARATOR . $modulePath;
         } else {
             // Absolute path
@@ -43,10 +46,30 @@ $commonJsAPI = call_user_func(function()
         }
         //TODO: handle "a la Node.js" "php_modules/" recursive resolution?
 
-        $fullModulePath = str_replace('/', DIRECTORY_SEPARATOR, $fullModulePath);
-        $fullModulePath .= $fileExtToAdd;;
+        // File exist check
+        $fileModulePath = $fullModulePath . $fileExtToAdd;
+        $resolvedModulePath = null;
+        if (is_file($fileModulePath)) {
+            // This is a regular "file Module" ; we just added the file extension
+            $resolvedModulePath = $fileModulePath;
+        } else {
+            // File path not found ; let's see if this is a "folder as Module"
+            if (is_dir($fullModulePath)) {
+                $directoryModulePath = $fullModulePath . DIRECTORY_SEPARATOR . $config['folderAsModuleFileName'];
+                if (file_exists($directoryModulePath)) {
+                    // Yeah! This is a "folder as Module"
+                    $resolvedModulePath = $directoryModulePath;
+                }
+            }
+        }
 
-        return realpath($fullModulePath);
+        if (null === $resolvedModulePath) {
+            return null;
+        }
+
+        $resolvedModulePath = str_replace('/', DIRECTORY_SEPARATOR, $resolvedModulePath);
+
+        return realpath($resolvedModulePath);
     };
 
     $_triggerModule = function ($moduleFilePath) use (&$config, &$require, &$define, &$_currentResolvedModuleDir)
@@ -132,7 +155,8 @@ $commonJsAPI = call_user_func(function()
      * @return mixed
      * @throw \Exception
      */
-    $require = function ($modulePath) use (&$config, &$plugins, &$_definitionsRegistry, &$_modulesRegistry, &$_triggerModule, &$_getResourceFullPath, &$_triggerDefine, &$_triggerPlugin)
+    $require = function ($modulePath) use (&$config, &$plugins, &$_definitionsRegistry, &$_modulesRegistry,
+        &$_triggerModule, &$_getResourceFullPath, &$_triggerDefine, &$_triggerPlugin, &$_currentResolvedModuleDir)
     {
         // "define()"-ed Module
         if (isset($_definitionsRegistry[$modulePath])) {
@@ -150,7 +174,7 @@ $commonJsAPI = call_user_func(function()
 
         }
 
-        // Do we use a plugin on this Module path (i.e. do we have "prefix!") ?
+        // Do we use a plugin on this Module path (i.e. do we have a [prefix]![resource path] pattern) ?
         if (preg_match('|^(\w+)!([a-z0-9/_.-]+)$|i', $modulePath, $matches)) {
             $pluginName = $matches[1];
             $resourcePath = $matches[2];
@@ -163,18 +187,18 @@ $commonJsAPI = call_user_func(function()
             return $moduleDefinitionResult;
         }
 
-        // Regular Module
+        // Regular Module resolution
         $fullModulePath = $_getResourceFullPath($modulePath, $config['modulesExt']);
+        if (null === $fullModulePath) {
+            throw new Exception('Unresolvable module "'.$modulePath.'" (from path: '.$_currentResolvedModuleDir.')!');
+        }
+
         if (isset($_modulesRegistry[$fullModulePath])) {
 
             return $_modulesRegistry[$fullModulePath];//previously resolved Module
         }
 
-        // Okay, let's resolve & trigger this Module!
-        if (!file_exists($fullModulePath)) {
-            throw new Exception('Unresolvable module "'.$modulePath.'" (full path: '.$fullModulePath.')!');
-        }
-
+        // Okay, let's trigger this Module!
         $moduleResolution = $_triggerModule($fullModulePath);
         $_modulesRegistry[$modulePath] = $moduleResolution;//this Module won't have to be resolved again
 
@@ -188,5 +212,3 @@ $commonJsAPI = call_user_func(function()
         'plugins' => &$plugins,
     );
 });
-
-return $commonJsAPI;

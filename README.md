@@ -6,7 +6,7 @@ A simple CommonJS spec implementation for PHP 5.3+.
 
 It fits in a single PHP file (≈ 150 lines of effective code) and allows a simple and easy application structure, based on
 the CommonJS "Module" design pattern. You might already know this pattern if you have ever worked with
-[Node.js](http://nodejs.org/) or [RequireJS](http://requirejs.org/).
+[Node.js](http://nodejs.org/) (server-side Javascript) or [RequireJS](http://requirejs.org/) (client-side Javascript).
 
 From [JavaScript Growing Up](http://fr.slideshare.net/davidpadbury/javascript-growing-up):
 > CommonJS introduced a simple API for dealing with modules:
@@ -20,14 +20,17 @@ This PHP implementation also supports two features inspired by RequireJS:
 * _defined-by-Closures_ Modules, with the [$define](#define) function
 * resources [Plugins](#plugins) (a simple "JSON decoder" is bundled as a sample).
 
+It comes with a "Folder as Modules" feature too, inspired by Node.js.
+
 ## Why CommonJS for PHP ?
 
+* CommonJS "Module" pattern is simple and efficient ; it lets you quickly create easily understandable and flexible code.
 * Between 2 beautiful projects based on Symfony, Zend Framework, Slim, Silex or whatever modern
 [PSR-0](https://github.com/php-fig/fig-standards/blob/master/accepted/PSR-0.md) heavy Object Oriented framework, have
 some rest with simple "good ol' procedural" PHP codestyle!
 * Feel comfortable in PHP when you're back from a Node.js or front-end [AMD](https://github.com/amdjs/amdjs-api/wiki/AMD) project.
 * CommonJS Module pattern acts as a very simple Service Locator and lazy-loaded dependencies resolver.
-* Have fun with isolated PHP code parts! Every Module runs in a automatically generated Closure, and you can freely create
+* Have fun with isolated PHP code parts! Every Module runs in an automatically generated Closure, and you can freely create
 variables and Closures within your Modules without without fearing a pollution of the PHP global space, nor collisions with
 other Modules code.
 * All your Modules code run in a "Closure sandbox", and Modules communicate between each other only through their
@@ -35,7 +38,9 @@ other Modules code.
 * Every Module content is run only once - the first time it is required.
 * CommonJS for PHP is perfectly interoperable with PSR-0 classes. You can use Symfony 2 or Zend Framework or yet other
 components in your Modules. It can be used with libraries managed by Composer as well.
-* This CommonJS implementation for PHP can be used as a micro-framework for quick little projects.
+* This CommonJS implementation for PHP can be used as a micro-framework for quick little projects...
+* ...But it can used for large serious projects too ; thousands of Node.js and AMD developers use this CommonJS
+Module pattern everyday.
 
 The code is willfully 100% procedural and Closures-based - this way, this CommonJS spec implementation code looks
 like Javascript code :-)
@@ -97,65 +102,28 @@ The ```$commonJS``` returned associative Array contains the following keys :
     * **basePath**: the base path of your Modules. Every Module you ```require()``` without a relative path will be located
     in this directory path. Default is the _commonjs.php_'s ```__DIR__```
     * **modulesExt**: the extension to add to the requested Modules path. Default: _'.php'_
+    * **folderAsModuleFileName**: the file name for "folders as Modules". Default: _'index.php'_
 * **plugins**: this associative Array is the CommonJS for PHP "a la RequireJS" plugins registry. Keys are plugin prefixes,
 values are paths to plugins files. See [Plugins](#plugins) section for more details.
-
-### define()
-
-The ```define()``` function lets you create Modules resolved by Closures. The first param is the name of the Module
-you define, and the second one is a Closure. When this Module is requested for the first time, this Closure is triggered
-and its return value is used a the Module value resolution. Subsequent calls will return the same value, managed by
-an internal data cache.
-
-```php
-$define('config', function() {
-    return array('debug' => true, 'appPath' => __DIR__);
-});
-
-// PHP 5.4
-echo $require('config')['debug'];//--> 'true'
-// PHP 5.3
-$config = $require('config')
-echo $config['debug'];//--> 'true'
-```
-
-The triggered Closure can accept up to 3 injected params: ```$require```, ```$exports``` and ```$module```.
-```$require``` let you require other modules from your Closure, while ```$exports``` and ```$module``` allows you
-to define the Module value resolution in a "CommonJS way":
-
-```php
-$define('app/logger', function($require, &$exports, &$module) {
-    $config = $require('config');
-    $logger = new Monolog\Logger('app');
-    if ($config['debug']) {
-        $logger->pushHandler(new Monolog\Handler\StreamHandler($config['appPath'] . 'logs/app.log'));
-    }
-    $module['exports'] = $logger;
-});
-
-$logger = $require('app/logger');
-```
-
-If you want to use that form instead of a simple ```return```, be aware that because call-time pass by reference
-has been removed in PHP 5.4, you have to use ```&$exports``` and ```&$module``` and not just just
-```$exports / $module``` in your definition Closure.
-Although it is possible to omit the "&" in PHP 5.3, it's better to think about the future :-)
 
 ### require()
 
 Triggers the resolution of a Module. All Modules resolutions are triggered only once, the first time they are requested.
 All subsequent calls to this Module will return the same value, retrieved from an internal data cache.
 
-They are 3 types of Module resolutions:
+They are 4 types of Module resolutions:
 * Modules mapped to a Closure through the ```define()``` function. When the required module path matches a previously defined
 Module path, the Closure is triggered and we fetch its returned value.
-* Modules mapped to Module files. This is the most common Module type. The module path is resolved, and the matching PHP
+* Modules mapped to files. This is the most common Module type. The module path is resolved, and the matching PHP
 file is triggered in a CommonJS environment.
     * The module path resolution follows this rule: if the module path begins with **./** or **../**, the PHP file path will
     be resolved relatively to the current Module path. Otherwise, the Module path is just appended to the CommonJS
     config "basePath" path.
     * Don't use the ".php" file extension in your required modules paths. It will be automatically appended to the resolved
     file path.
+* Modules mapped to folders. It is very close to the previous "Modules mapped to files" behaviour, excepted that you only
+have to use a folder path as the ```$require```-ed module file path. If the folder contains a "index.php" file, this file
+will be used as the file Module.
 * Modules mapped to plugins. When a module path contains a prefix followed by an exclamation mark, it is considered as a
 plugin call. The part before the "!" is the plugin name, and the part after the "!" is the resource name.
 See [Plugins](#plugins) section for more detail.
@@ -164,14 +132,20 @@ See [Plugins](#plugins) section for more detail.
 // All Module types:
 
 // Closure-mapped Module:
-$define('debug', function() { return true; });
-$debug = $require('debug');
+$define('config', function() { return array('debug' => true, 'appPath' => __DIR__); });
+$config = $require('config');
 
 // Absolute Module file resolution: (absolute, but relative to the CommonJS "config['basePath']" path)
+// --> will trigger the "app/logger.php" Module file code
 $logger = $require('app/logger');
 
 // Relative Module file resolution: (relative to the Module which calls "$require()")
-$logger = $require('../logger');
+// --> will trigger the "../mailer.php" Module file code
+$logger = $require('../mailer');
+
+// Folder as Module resolution: (works with absolute or relative paths)
+// --> will trigger the "symfony-bridge/request/index.php" Module file code
+$logger = $require('symfony-bridge/request');
 
 // Plugin call:
 $myModuleConfig = $require('json!./module-config.json');
@@ -199,6 +173,47 @@ and ```id``` is the absolute Module path of the Module :
 
 > The "id" property must be such that require(module.id) will return the exports object from which the module.id originated
 > (That is to say module.id can be passed to another module, and requiring that must return the original module).
+
+### define()
+
+The ```define()``` function lets you create Modules resolved by Closures. The first param is the name of the Module
+you define, and the second one is a Closure. When this Module is requested for the first time, this Closure is triggered
+and its return value is used a the Module value resolution. Subsequent calls will return the same value, managed by
+an internal data cache.
+
+```php
+$define('config', function() {
+    return array('debug' => true, 'appPath' => __DIR__);
+});
+
+// PHP 5.4 (needs function array dereferencing)
+echo $require('config')['debug'];//--> 'true'
+// PHP 5.3
+$config = $require('config')
+echo $config['debug'];//--> 'true'
+```
+
+The triggered Closure can accept up to 3 injected params: ```$require```, ```$exports``` and ```$module```.
+```$require``` let you require other modules from your Closure, while ```$exports``` and ```$module``` allows you
+to define the Module value resolution in a "CommonJS way":
+
+```php
+$define('app/logger', function($require, &$exports, &$module) {
+    $config = $require('config');
+    $logger = new Monolog\Logger('app');
+    if ($config['debug']) {
+        $logger->pushHandler(new Monolog\Handler\StreamHandler($config['appPath'] . 'logs/app.log'));
+    }
+    $module['exports'] = $logger;
+});
+
+$logger = $require('app/logger');
+```
+
+If you want to use that form instead of a simple ```return```, be aware that because call-time pass by reference
+has been removed in PHP 5.4, you have to use ```&$exports``` and ```&$module``` and not just just
+```$exports / $module``` in your definition Closure.
+Although it is possible to omit the "&" in PHP 5.3, it's better to think about the future :-)
 
 ### Plugins
 
