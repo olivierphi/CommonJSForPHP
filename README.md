@@ -176,8 +176,8 @@ and ```id``` is the absolute Module path of the Module :
 
 ### define()
 
-The ```define()``` function lets you create Modules resolved by Closures. The first param is the name of the Module
-you define, and the second one is a Closure. When this Module is requested for the first time, this Closure is triggered
+The ```define()``` function lets you create Modules resolved by Closures. The first param is the path of the Module
+you define, and the second one is a Closure. The first time this Module path is ```$require```-ed, this Closure is triggered
 and its return value is used a the Module value resolution. Subsequent calls will return the same value, managed by
 an internal data cache.
 
@@ -212,22 +212,22 @@ $logger = $require('app/logger');
 
 If you want to use that form instead of a simple ```return```, be aware that because call-time pass by reference
 has been removed in PHP 5.4, you have to use ```&$exports``` and ```&$module``` and not just just
-```$exports / $module``` in your definition Closure.
+```$exports / $module``` in your definition Closure params.
 Although it is possible to omit the "&" in PHP 5.3, it's better to think about the future :-)
 
 ### Plugins
 
 CommonJS for PHP is bundled with a minimalist ["a la RequireJS" plugin system](http://requirejs.org/docs/plugins.html).
-A plugin is defined by a unique name and a file path. They are triggered when the ```$require()``` function parameter is
-a path containing an exclamation mark. The part before the "!" is the plugin name, and the part after the "!" is passed
-to the plugin file.
+A plugin is defined by a unique name and a resource path. They are triggered when the ```$require()``` function parameter is
+a path containing an exclamation mark. The part before the "!" is the plugin name, and the part after the "!" is the
+resource path: ```[plugin name]![resource path]```.
 
 Like Modules, plugins are triggered in a generated Closure, and run in their own scope. This scope only contains the
 ```$require``` and ```$resourcePath``` variables. With ```$require()``` you can have access to other Modules and plugins,
 while ```$resourcePath``` is the part of the required Module path after the "!". The resource path is resolved in the
-same way than Modules : they can be relative to the Module which triggers the plugin or absolute.
+same way than Modules: they can be relative to the Module which triggers the plugin or absolute.
 
-Note that unlike ```$require```-ed Modules, which are triggered only once, plugins are triggered each time they are requested.
+Note that unlike ```$require```-ed Modules (which are triggered only once), plugins are triggered each time they are requested.
 
 ```php
 // A YAML sample plugin
