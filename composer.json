@@ -1,8 +1,8 @@
 {
-    "name": "dr-benton/commonjs",
+    "name": "commonjs/commonjs",
     "type": "library",
-    "description": "A simple CommonJS spec implementation for PHP 5.3+",
-    "keywords": ["commonjs", "module", "pattern"],
+    "description": "A simple CommonJS Module spec implementation for PHP 5.3+",
+    "keywords": ["commonjs", "module", "pattern", "dependency injection", "container", "microframework"],
     "homepage": "https://github.com/DrBenton/CommonJSForPHP",
     "license": "MIT",
     "authors": [
