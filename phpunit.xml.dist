@@ -9,6 +9,7 @@
          processIsolation="false"
          stopOnFailure="true"
          syntaxCheck="false"
+         bootstrap="tests/bootstrap.php"
         >
     <testsuites>
         <testsuite name="CommonJS for PHP Test Suite">

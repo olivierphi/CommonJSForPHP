@@ -116,6 +116,43 @@ $commonJS['config']['basePath'] = array(
 );
 ```
 
+If you use Composer, a best CommonJS environment initialization can be used:
+
+```php
+$commonJS = \CommonJS\CommonJSProvider::getInstance();
+```
+
+Make sure that you first added CommonJS in your ```composer.json``` file :
+
+```
+{
+    "minimum-stability": "dev",
+    "require": {
+        "commonjs/commonjs": "1.0.*"
+    }
+}
+```
+
+You can share a single instance of a CommonJS environment, but you may use multiple CommonJS environments
+if you need to.
+Since these environments are very light-weight library instances, you can do this without worrying about performance.
+
+```php
+$commonJS = \CommonJS\CommonJSProvider::getInstance();
+
+// ... in another file :
+$commonJS = \CommonJS\CommonJSProvider::getInstance();
+// --> will return the same shared CommonJS environment
+
+// ... in yet another file :
+$commonJS = \CommonJS\CommonJSProvider::getInstance('default');
+// --> will also return the same shared CommonJS environment, as 'default' is the default CommonJS instance id
+
+// ... in a last file :
+$commonJS = \CommonJS\CommonJSProvider::getInstance('my-provider-instance');
+// --> will return a fresh new CommonJS environment, with it own basePath, plugins and Modules
+```
+
 ### require()
 
 Triggers the resolution of a Module. All Modules resolutions are triggered only once, the first time they are requested.

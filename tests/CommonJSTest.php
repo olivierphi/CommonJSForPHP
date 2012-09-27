@@ -1,4 +1,12 @@
 <?php
+/*
+ * This file is part of the CommonJS for PHP library.
+ *
+ * (c) Olivier Philippon <https://github.com/DrBenton>
+ *
+ * For the full copyright and license information, please view the LICENSE
+ * file that was distributed with this source code.
+ */
 
 class CommonJSTest extends \PHPUnit_Framework_TestCase
 {
@@ -180,8 +188,35 @@ class CommonJSTest extends \PHPUnit_Framework_TestCase
         );
 
         $this->assertEquals('direct-export', ''.$require('direct-export'));
-        $this->assertEquals('alt-module-dir', $require('alt-direct-export'));
+        $this->assertEquals('alt-direct-export', $require('alt-direct-export'));
         $this->assertEquals(600, $require('alt-module-consumer'));
         $this->assertEquals(700, $require('alt-relative-module-consumer'));
+    }
+
+    public function testObjectOrientedProgrammingAccess ()
+    {
+        $commonJs = \CommonJS\CommonJSProvider::getInstance();
+
+        $this->assertArrayHasKey('require', $commonJs);
+        $this->assertArrayHasKey('define', $commonJs);
+        $this->assertArrayHasKey('config', $commonJs);
+
+        $commonJs['config']['basePath'] = __DIR__ . '/module-dir';
+
+        $commonJsBis = \CommonJS\CommonJSProvider::getInstance();
+
+        $this->assertEquals($commonJs['config']['basePath'], $commonJsBis['config']['basePath']);
+
+        $commonJsTer = \CommonJS\CommonJSProvider::getInstance('test');
+
+        $this->assertNotEquals($commonJs['config']['basePath'], $commonJsTer['config']['basePath']);
+
+        $commonJsTer['config']['basePath'] = __DIR__ . '/alt-module-dir';
+
+        $this->assertEquals('direct-export', call_user_func($commonJs['require'], 'direct-export'));
+        $this->assertEquals('alt-direct-export', call_user_func($commonJsTer['require'], 'alt-direct-export'));
+
+        $this->assertEquals('a-module', call_user_func($commonJs['require'], 'a-module'));
+        $this->assertEquals('alt-a-module', call_user_func($commonJsTer['require'], 'a-module'));
     }
 }

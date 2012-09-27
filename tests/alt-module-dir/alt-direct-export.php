@@ -1,3 +1,3 @@
 <?php
 
-$module['exports'] = 'alt-module-dir';
+$module['exports'] = 'alt-direct-export';
