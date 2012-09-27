@@ -21,7 +21,7 @@ class CommonJSTest extends \PHPUnit_Framework_TestCase
         $require = $commonJs['require'];
         $commonJs['config']['basePath'] = __DIR__;
 
-        $this->assertEquals('[Logger]', ''.$require('module-dir/direct-export'));
+        $this->assertEquals('direct-export', ''.$require('module-dir/direct-export'));
     }
 
     public function testModuleMultipleExports ()
@@ -112,9 +112,39 @@ class CommonJSTest extends \PHPUnit_Framework_TestCase
         $commonJs = include __DIR__ . '/../commonjs.php';
         $require = $commonJs['require'];
         $commonJs['config']['basePath'] = __DIR__;
-        $commonJs['plugins']['fileRev'] = __DIR__ .'/module-dir/custom-extensions/commonjs-ext.file-reverser.php';
+        $commonJs['plugins']['fileRev'] = __DIR__ .'/module-dir/custom-plugins/commonjs-plugin.file-reverser.php';
 
         $this->assertEquals('notneBrD', $require('fileRev!./module-dir/resources/simple-text.txt'));
+    }
+
+    public function testPluginIsTriggeredOnlyOnceForSameResourcePath ()
+    {
+        $commonJs = include __DIR__ . '/../commonjs.php';
+        $require = $commonJs['require'];
+        $commonJs['config']['basePath'] = __DIR__;
+        $commonJs['plugins']['incrementer'] = __DIR__ .'/module-dir/custom-plugins/commonjs-plugin.incrementer.php';
+
+        $this->assertEquals(1, $require('incrementer!./module-dir/resources/simple-text.txt'));
+        $this->assertEquals(1, $require('incrementer!./module-dir/resources/simple-text.txt'));
+        // Must work with absolute module path if it is resolved the same absolute resource path than the previous absolute resource path
+        $this->assertEquals(1, $require('incrementer!module-dir/resources/simple-text.txt'));
+        $this->assertEquals(1, $require('incrementer!/module-dir/resources/simple-text.txt'));
+    }
+
+    /**
+     * @depends testPluginIsTriggeredOnlyOnceForSameResourcePath
+     */
+    public function testPluginIsTriggeredMultipleTimesForDifferentsResourcePath ()
+    {
+        $commonJs = include __DIR__ . '/../commonjs.php';
+        $require = $commonJs['require'];
+        $commonJs['config']['basePath'] = __DIR__;
+        $commonJs['plugins']['incrementer'] = __DIR__ .'/module-dir/custom-plugins/commonjs-plugin.incrementer.php';
+
+        $this->assertEquals(2, $require('incrementer!./module-dir/resources/simple-text.txt'));
+        $this->assertEquals(3, $require('incrementer!module-dir/resources/data.json'));
+        $this->assertEquals(2, $require('incrementer!module-dir/resources/simple-text.txt'));
+        $this->assertEquals(3, $require('incrementer!./module-dir/resources/data.json'));
     }
 
     public function testModuleIdAndUri ()
@@ -138,5 +168,20 @@ class CommonJSTest extends \PHPUnit_Framework_TestCase
         $commonJs['config']['basePath'] = __DIR__;
 
         $this->assertEquals(500, $require('/module-dir/folder-as-module'));
+    }
+
+    public function testMultipleBasePaths ()
+    {
+        $commonJs = include __DIR__ . '/../commonjs.php';
+        $require = $commonJs['require'];
+        $commonJs['config']['basePath'] = array(
+            __DIR__ . '/module-dir',
+            __DIR__ . '/alt-module-dir',
+        );
+
+        $this->assertEquals('direct-export', ''.$require('direct-export'));
+        $this->assertEquals('alt-module-dir', $require('alt-direct-export'));
+        $this->assertEquals(600, $require('alt-module-consumer'));
+        $this->assertEquals(700, $require('alt-relative-module-consumer'));
     }
 }

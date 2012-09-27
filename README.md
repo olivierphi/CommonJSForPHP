@@ -106,6 +106,16 @@ The ```$commonJS``` returned associative Array contains the following keys :
 * **plugins**: this associative Array is the CommonJS for PHP "a la RequireJS" plugins registry. Keys are plugin prefixes,
 values are paths to plugins files. See [Plugins](#plugins) section for more details.
 
+Note that you can also use an array for **config['basePath']** : this allow you to define multiple modules root paths :
+
+```php
+$commonJS = include './commonjs.php';
+$commonJS['config']['basePath'] = array(
+    __DIR__.'/app/modules',
+    __DIR__.'/vendor/symfony-bridge/modules',
+);
+```
+
 ### require()
 
 Triggers the resolution of a Module. All Modules resolutions are triggered only once, the first time they are requested.
@@ -227,7 +237,8 @@ Like Modules, plugins are triggered in a generated Closure, and run in their own
 while ```$resourcePath``` is the part of the required Module path after the "!". The resource path is resolved in the
 same way than Modules: they can be relative to the Module which triggers the plugin or absolute.
 
-Note that unlike ```$require```-ed Modules (which are triggered only once), plugins are triggered each time they are requested.
+Like ```$require```-ed Modules (which are triggered only once), plugins already triggered with the same resolved resource
+path will return a cached result value for subsequent calls.
 
 ```php
 // A YAML sample plugin

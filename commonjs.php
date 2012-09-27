@@ -29,60 +29,79 @@ return call_user_func(function()
 
     $_currentResolvedModuleDir = null;
 
-    $_getResourceFullPath = function ($modulePath, $fileExtToAdd = '') use (&$config, &$_currentResolvedModuleDir)
+    $_getResourceFullPath = function ($modulePath, $fileExtToAdd = '') use (&$config, &$_searchResource, &$_currentResolvedModuleDir)
     {
+        $basePaths = is_array($config['basePath']) ? $config['basePath'] : array($config['basePath']);
+
         if (null === $_currentResolvedModuleDir) {
-            //defaults to $config['basePath'] if we are not already in a Module context
-            $_currentResolvedModuleDir = $config['basePath'];
+            //defaults to $config['basePath'][0] if we are not already in a Module context
+            $_currentResolvedModuleDir = $basePaths[0];
         }
 
         // Relative or absolute path?
         if ('./' === substr($modulePath, 0, 2) || '../' === substr($modulePath, 0, 3)) {
             // Relative path
             $fullModulePath = $_currentResolvedModuleDir . DIRECTORY_SEPARATOR . $modulePath;
+            $resolvedModulePath = $_searchResource($fullModulePath, $fileExtToAdd);
         } else {
-            // Absolute path
-            $fullModulePath = $config['basePath'] . DIRECTORY_SEPARATOR . $modulePath;
-        }
-        //TODO: handle "a la Node.js" "php_modules/" recursive resolution?
-
-        // File exist check
-        $fileModulePath = $fullModulePath . $fileExtToAdd;
-        $resolvedModulePath = null;
-        if (is_file($fileModulePath)) {
-            // This is a regular "file Module" ; we just added the file extension
-            $resolvedModulePath = $fileModulePath;
-        } else {
-            // File path not found ; let's see if this is a "folder as Module"
-            if (is_dir($fullModulePath)) {
-                $directoryModulePath = $fullModulePath . DIRECTORY_SEPARATOR . $config['folderAsModuleFileName'];
-                if (file_exists($directoryModulePath)) {
-                    // Yeah! This is a "folder as Module"
-                    $resolvedModulePath = $directoryModulePath;
+            // Absolute path search from $basePaths
+            foreach ($basePaths as $currentBasePath) {
+                $fullModulePath = $currentBasePath . DIRECTORY_SEPARATOR . $modulePath;
+                $resolvedModulePath = $_searchResource($fullModulePath, $fileExtToAdd);
+                if (null !== $resolvedModulePath) {
+                    break;
                 }
             }
         }
 
-        if (null === $resolvedModulePath) {
-            return null;
+        return $resolvedModulePath;//can be null if no matching module path has been found
+    };
+
+    $_searchResource = function ($searchedResourceFullPath, $fileExtToAdd = '') use (&$config)
+    {
+        static $resolutionsCache = array();
+
+        $moduleCacheId = $searchedResourceFullPath . '|' . $fileExtToAdd;
+        if (isset($resolutionsCache[$moduleCacheId])) {
+
+            return $resolutionsCache[$moduleCacheId];
         }
 
-        $resolvedModulePath = str_replace('/', DIRECTORY_SEPARATOR, $resolvedModulePath);
+        $resolvedModulePath = null;
+        if (is_file($searchedResourceFullPath . $fileExtToAdd)) {
+            // This is a regular "file Module" ; we just add the file extension
+            $resolvedModulePath = $searchedResourceFullPath . $fileExtToAdd;
+        } else if (is_dir($searchedResourceFullPath)) {
+            $directoryModulePath = $searchedResourceFullPath . DIRECTORY_SEPARATOR . $config['folderAsModuleFileName'];
+            if (file_exists($directoryModulePath)) {
+                // Yeah! This is a "folder as Module"
+                $resolvedModulePath = $directoryModulePath;
+            }
+        }
 
-        return realpath($resolvedModulePath);
+        if (null !== $resolvedModulePath) {
+            $resolvedModulePath = str_replace('/', DIRECTORY_SEPARATOR, $resolvedModulePath);
+            $resolvedModulePath = realpath($resolvedModulePath);
+        }
+
+        $resolutionsCache[$moduleCacheId] = $resolvedModulePath;
+
+        return $resolvedModulePath;
     };
 
     $_triggerModule = function ($moduleFilePath) use (&$config, &$require, &$define, &$_currentResolvedModuleDir)
     {
         // Env setup...
         $module = array();
+        $module['id'] = str_replace($config['basePath'], '', $moduleFilePath);//can handle string or array "$config['basePath']" :-)
         $module['id'] = str_replace(
-            array($config['basePath'], DIRECTORY_SEPARATOR, $config['modulesExt']),
-            array('', '/', ''),
-            $moduleFilePath
+            array(DIRECTORY_SEPARATOR, $config['modulesExt']),
+            array('/', ''),
+            $module['id']
         );
         $module['uri'] = $moduleFilePath;
         $exports = array();
+
         $moduleTrigger = function () use ($moduleFilePath, &$require, &$define, &$module, &$exports)
         {
             require $moduleFilePath;
@@ -128,13 +147,24 @@ return call_user_func(function()
 
     $_triggerPlugin = function ($extensionName, $resourcePath) use (&$plugins, &$require, &$_getResourceFullPath)
     {
+        static $pluginsResolutionsCache = array();
+
         $extensionFilePath = $plugins[$extensionName];
         $resourcePath = $_getResourceFullPath($resourcePath);
+
+        $pluginCacheId = $extensionFilePath . '|' . $resourcePath;
+        if (isset($pluginsResolutionsCache[$pluginCacheId])) {
+
+            return $pluginsResolutionsCache[$pluginCacheId];
+        }
+
         $extensionTrigger = function () use ($extensionFilePath, &$require, $resourcePath)
         {
             return require $extensionFilePath;
         };
         $extensionResult = call_user_func($extensionTrigger);
+
+        $pluginsResolutionsCache[$pluginCacheId] = $extensionResult;
 
         return $extensionResult;
     };
@@ -182,7 +212,6 @@ return call_user_func(function()
                 throw new Exception('Unregistered plugin  "'.$pluginName.'" (resource path: "'.$resourcePath.'")!');
             }
             $moduleDefinitionResult = $_triggerPlugin($pluginName, $resourcePath);
-            $_modulesRegistry[$modulePath] = $moduleDefinitionResult;
 
             return $moduleDefinitionResult;
         }
