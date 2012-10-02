@@ -215,6 +215,9 @@ in other Modules.
 use ```$module['exports'] = $mySingleExportedValue;```.
 Additionally, you have access to ```$module['id']``` and
 ```$module['uri']``` properties, according to [CommonJS spec](http://wiki.commonjs.org/wiki/Modules/1.1.1).
+You also have access to ```$module['resolve']``` and ```$module['moduleExists']``` functions. The first one
+returns a resolved full module path or ```null``` ; the second one returns a boolean, and allows you to test whether a module
+is defined or not.
 ```uri``` is the [realpath](php.net/manual/fr/function.realpath.php) of the Module file,
 and ```id``` is the absolute Module path of the Module :
 

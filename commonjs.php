@@ -31,6 +31,16 @@ return call_user_func(function()
 
     $_getResourceFullPath = function ($modulePath, $fileExtToAdd = '') use (&$config, &$_searchResource, &$_currentResolvedModuleDir)
     {
+        static $absolutePathsResolutionsCache = array();
+
+        $isRelativePath = ('./' === substr($modulePath, 0, 2) || '../' === substr($modulePath, 0, 3));
+
+        $pathCacheId = $modulePath . $fileExtToAdd;
+        if (!$isRelativePath && isset($absolutePathsResolutionsCache[$pathCacheId])) {
+
+            return $absolutePathsResolutionsCache[$pathCacheId];
+        }
+
         $basePaths = is_array($config['basePath']) ? $config['basePath'] : array($config['basePath']);
 
         if (null === $_currentResolvedModuleDir) {
@@ -39,7 +49,7 @@ return call_user_func(function()
         }
 
         // Relative or absolute path?
-        if ('./' === substr($modulePath, 0, 2) || '../' === substr($modulePath, 0, 3)) {
+        if ($isRelativePath) {
             // Relative path
             $fullModulePath = $_currentResolvedModuleDir . DIRECTORY_SEPARATOR . $modulePath;
             $resolvedModulePath = $_searchResource($fullModulePath, $fileExtToAdd);
@@ -54,7 +64,14 @@ return call_user_func(function()
             }
         }
 
+        $absolutePathsResolutionsCache[$pathCacheId] = $resolvedModulePath;
+
         return $resolvedModulePath;//can be null if no matching module path has been found
+    };
+
+    $_moduleExists = function ($modulePath) use (&$_getResourceFullPath, &$config)
+    {
+        return (boolean) $_getResourceFullPath($modulePath, $config['modulesExt']);
     };
 
     $_searchResource = function ($searchedResourceFullPath, $fileExtToAdd = '') use (&$config)
@@ -89,7 +106,7 @@ return call_user_func(function()
         return $resolvedModulePath;
     };
 
-    $_triggerModule = function ($moduleFilePath) use (&$config, &$require, &$define, &$_currentResolvedModuleDir)
+    $_triggerModule = function ($moduleFilePath) use (&$config, &$require, &$define, &$_currentResolvedModuleDir, &$_getResourceFullPath, &$_moduleExists)
     {
         // Env setup...
         $module = array();
@@ -100,6 +117,14 @@ return call_user_func(function()
             $module['id']
         );
         $module['uri'] = $moduleFilePath;
+        $module['resolve'] = function ($modulePath) use ($_getResourceFullPath, $config)
+        {
+            return $_getResourceFullPath($modulePath, $config['modulesExt']);
+        };
+        $module['moduleExists'] = function ($modulePath) use ($_moduleExists)
+        {
+            return $_moduleExists($modulePath);
+        };
         $exports = array();
 
         $moduleTrigger = function () use ($moduleFilePath, &$require, &$define, &$module, &$exports)

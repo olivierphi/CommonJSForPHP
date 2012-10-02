@@ -219,4 +219,23 @@ class CommonJSTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals('a-module', call_user_func($commonJs['require'], 'a-module'));
         $this->assertEquals('alt-a-module', call_user_func($commonJsTer['require'], 'a-module'));
     }
+
+    public function testModuleResolution ()
+    {
+        $commonJs = include __DIR__ . '/../commonjs.php';
+        $require = $commonJs['require'];
+        $commonJs['config']['basePath'] = __DIR__;
+
+        $resolutionModuleResult = $require('module-dir/resolution-module');
+        $this->assertEquals(array(
+            __DIR__ . '/module-dir/direct-export.php',
+            __DIR__ . '/module-dir/a-module.php',
+            null,
+            null,
+            true,
+            true,
+            false,
+            false,
+        ), $resolutionModuleResult);
+    }
 }
