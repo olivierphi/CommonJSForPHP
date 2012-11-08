@@ -199,8 +199,12 @@ return call_user_func(function()
      * @param callable $moduleDefinition
      * @public
      */
-    $define = function ($definitionPath, \Closure $moduleDefinition) use (&$_definitionsRegistry)
+    $define = function ($definitionPath, \Closure $moduleDefinition) use (&$_definitionsRegistry, &$_modulesRegistry)
     {
+        if (isset($_modulesRegistry[$definitionPath])) {
+            unset($_modulesRegistry[$definitionPath]);//clear previous defined module result cache
+        }
+
         $_definitionsRegistry[$definitionPath] = $moduleDefinition;
     };
 
