@@ -345,8 +345,8 @@ Of course, they are some limitations with this system. Since PHP doesn't allow d
 
 These namespaces naming scheme is : "\CommonJS\Module\[Module ID]", where the Module ID slashes are replaced with backslashes and
 special chars replaced with underscores.
-For example, a ```UserCheck``` class declared in a "lib/services/user-check" Module will have this full class name:
-```\CommonJS\Module\lib\services\user_check\UserCheck```
+For example, a ```UserCheck``` class declared in a "lib/services/user-check" Module will have this full class name:  
+_\CommonJS\Module\lib\services\user_check\UserCheck_
 
 See unit tests for a sample of this dynamic namespacing hardcoded usage.
 
