@@ -296,6 +296,61 @@ $commonJS['plugins']['yaml'] = __DIR__ . '/app/plugins/commonsjs-plugin.yaml.php
 $config = $require('yaml!./resources/config.yml');
 ```
 
+### Classes
+
+You can use PHP classes in your CommonJS Modules. As PHP doesn't support nested classes or namespaces defined at runtime,
+the implementation of isolated classes in CommonJS Modules has to rely on ```namespace``` and ```eval()```.
+
+Yes, ```eval()``` is used, this is absolutely EVIL, but I have not been able to find another way of properly isolating classes in Modules.
+The fact is that PHP classes are global constants, thus you can't define a ```Foo``` class in a Module file and another
+```Foo``` class in another file. This doesn't fit the CommonJS way, since you should be able to declare a class in a
+Module without having to care about conflicting classes names and without having to hardcode namespaces in your Module.
+
+The only trick for exporting classes is to prefix their name with the magic constant ```__NAMESPACE__``` in your Module exports :
+
+```php
+// file 'lib/mailing/test/mailer.php'
+class Mailer
+{
+    public function sendEmail() {
+        $logger->log("test email sent!");//the email is not sent
+    }
+}
+
+$module['exports'] = __NAMESPACE__.'\\Mailer';
+
+// file 'lib/mailing/prod/mailer.php'
+class Mailer
+{
+    public function sendEmail() {
+        $mailerService->sendEmail();//the email is really sent
+    }
+}
+
+$module['exports'] = __NAMESPACE__.'\\Mailer';
+
+// file 'app/subscription/confirm.php'
+$mailerClass = $require('lib/mailing/prod/mailer');
+$mailerInstance = new $mailerClass(); // the full class name contains a dynamic namespace, but you don't have to deal with this
+$mailerInstance->sendEmail();
+
+```
+
+In this sample, two "Mailer" classes are declared : in a normal PHP world, this should trigger an error,
+but with this CommonJS implementation the Module content is automatically namespaced at runtime, allowing
+you to declare classes without having to worry about classes names collision.
+
+Of course, they are some limitations with this system. Since PHP doesn't allow dynamic inheritance
+(i.e. ```class SubClass extends $className```), you can't  inherit a class without using its hardcoded dynamic namespace.
+
+These namespaces naming scheme is : "\CommonJS\Module\[Module ID]", where the Module ID slashes are replaced with backslashes and
+special chars replaced with underscores.
+For example, a ```UserCheck``` class declared in a "lib/services/user-check" Module will have this full class name:
+```\CommonJS\Module\lib\services\user_check\UserCheck```
+
+See unit tests for a sample of this dynamic namespacing hardcoded usage.
+
+
 ## More info
 
 As the source code of this "CommonJS for PHP" library is a lot shorter than this README, you can

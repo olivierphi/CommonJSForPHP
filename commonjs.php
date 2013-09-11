@@ -129,7 +129,14 @@ return call_user_func(function()
 
         $moduleTrigger = function () use ($moduleFilePath, &$require, &$define, &$module, &$exports)
         {
-            require $moduleFilePath;
+            // Yes, you're right : I probably deserve death for this "eval()" usage...
+            // But I have not been able to find another way of using properly isolated classes in this CommonJS Modules PHP implementation :-)
+            $moduleDynamicNamespace = 'CommonJS\Module' . str_replace('/', '\\', $module['id']);
+            $moduleDynamicNamespace = preg_replace('|[\s-]|i', '_', $moduleDynamicNamespace);
+            $moduleFileContent = file_get_contents($moduleFilePath);
+            $moduleFileContent = 'namespace '.$moduleDynamicNamespace.'; ?>'.$moduleFileContent;
+
+            eval($moduleFileContent);
         };
 
         // Go!
@@ -252,13 +259,12 @@ return call_user_func(function()
         }
 
         if (isset($_modulesRegistry[$fullModulePath])) {
-
             return $_modulesRegistry[$fullModulePath];//previously resolved Module
         }
 
         // Okay, let's trigger this Module!
         $moduleResolution = $_triggerModule($fullModulePath);
-        $_modulesRegistry[$modulePath] = $moduleResolution;//this Module won't have to be resolved again
+        $_modulesRegistry[$fullModulePath] = $moduleResolution;//this Module won't have to be resolved again
 
         return $moduleResolution;
     };

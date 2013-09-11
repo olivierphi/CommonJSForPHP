@@ -238,4 +238,29 @@ class CommonJSTest extends \PHPUnit_Framework_TestCase
             false,
         ), $resolutionModuleResult);
     }
+
+    public function testModulesClasses ()
+    {
+        $commonJs = include __DIR__ . '/../commonjs.php';
+        $require = $commonJs['require'];
+        $commonJs['config']['basePath'] = __DIR__;
+
+        $fooClass = $require('module-dir/classes/foo');
+        $fooInstance = new $fooClass();
+        $this->assertEquals('CommonJS\Module\module_dir\classes\foo\Foo', ''.$fooInstance);
+        $this->assertEquals("I'm an instance of a Foo class, automatically namespaced.", ''.$fooInstance->sayHi());
+
+        $anotherFooClass = $require('module-dir/classes/package/foo');
+        $anotherFooInstance = new $anotherFooClass();
+        $this->assertEquals('CommonJS\Module\module_dir\classes\package\foo\Foo', ''.$anotherFooInstance);
+        $this->assertEquals("I'm an instance of another Foo class, automatically namespaced.", ''.$anotherFooInstance->sayHi());
+
+        $anotherFooSubClass = $require('module-dir/classes/package/foo-subclass');
+        $anotherFooSubInstance = new $anotherFooSubClass();
+        $this->assertEquals('CommonJS\Module\module_dir\classes\package\foo_subclass\Foo', ''.$anotherFooSubInstance);
+        $this->assertEquals(
+            "I'm an instance of yet another Foo class, inheriting from another Foo class, automatically namespaced (but I have to use a hardocoded parent class namespace).",
+            ''.$anotherFooSubInstance->sayHi()
+        );
+    }
 }
