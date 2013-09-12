@@ -9,4 +9,7 @@ class Foo {
 
 }
 
-$module['exports'] = __NAMESPACE__.'\\Foo';
+$exports['getInstance'] = function ()
+{
+    return new Foo();
+};

@@ -103,6 +103,8 @@ The ```$commonJS``` returned associative Array contains the following keys :
     in this directory path. Default is the _commonjs.php_'s ```__DIR__```
     * **modulesExt**: the extension to add to the requested Modules path. Default: _'.php'_
     * **folderAsModuleFileName**: the file name for "folders as Modules". Default: _'index.php'_
+    * **autoNamespacing**: set this boolean to ```true``` to have all your Modules PHP code automatically wrapped in unique
+     namespaces at runtime. See [Classes](#classes) section for more details.  Default: _false_
 * **plugins**: this associative Array is the CommonJS for PHP "a la RequireJS" plugins registry. Keys are plugin prefixes,
 values are paths to plugins files. See [Plugins](#plugins) section for more details.
 
@@ -298,15 +300,32 @@ $config = $require('yaml!./resources/config.yml');
 
 ### Classes
 
-You can use PHP classes in your CommonJS Modules. As PHP doesn't support nested classes or namespaces defined at runtime,
-the implementation of isolated classes in CommonJS Modules has to rely on ```namespace``` and ```eval()```.
+You can declare PHP classes in your CommonJS Modules, but as PHP doesn't support nested classes or namespaces defined at runtime,
+you have to be careful and not create same classes names in different Modules.
 
-Yes, ```eval()``` is used, this is absolutely EVIL, but I have not been able to find another way of properly isolating classes in Modules.
+So, the cleaner solution is to use Composer or another class loading system to handle your classes.  
+Modules and classes declarations are kept separated : you declare your classes in some location, like you usually do in
+your PHP projects, and you use them in your Modules.
+
+If you really want to declare classes in your PHP "à la CommonJS" Modules, you have two options :
+
+* you can choose to handle classes collisions prevention yourself. You can use hardcoded classes names prefixes or
+namespaces to ensure your classes names don't overlap each other, like you usually do in PHP.
+* but you can also use the "autoNamespacing" config setting of this COmmonJS implementation. If you set it to ```true```, all your
+Modules will be automatically enclosed in dynamic namespaces, created at runtime.
+
+Be aware, though, that the implementation of this dynamic classes names isolation in CommonJS Modules has to rely on
+```namespace``` and ```eval()```.  
+Yes, ```eval()``` is used, and this is absolutely EVIL, but I have not been able to find another way of properly
+isolating classes in Modules :-)  
 The fact is that PHP classes are global constants, thus you can't define a ```Foo``` class in a Module file and another
 ```Foo``` class in another file. This doesn't fit the CommonJS way, since you should be able to declare a class in a
-Module without having to care about conflicting classes names and without having to hardcode namespaces in your Module.
+Module without having to care about conflicting classes names and without having to hardcode namespaces in your Module.  
+But because PHP is not JavaScript, we have to use such a trick if we want to be able to declare classes in our Modules
+without having to manually handle classes names uniqueness.
 
-The only trick for exporting classes is to prefix their name with the magic constant ```__NAMESPACE__``` in your Module exports :
+The only trick to declare and export classes is to prefix their name with the magic constant ```__NAMESPACE__``` in your
+Module exports, or to use a simple Factory:
 
 ```php
 // file 'lib/mailing/test/mailer.php'
@@ -329,6 +348,20 @@ class Mailer
 
 $module['exports'] = __NAMESPACE__.'\\Mailer';
 
+// file 'lib/mailing/dev/mailer.php'
+class Mailer
+{
+    public function sendEmail() {
+        $mailerService->sendEmail();//the email is really sent
+    }
+}
+
+// Instead of having to deal with the __NAMESPACE__,you can also use a Factory!
+$exports['getInstance'] = function ()
+{
+    return new Mailer();
+};
+
 // file 'app/subscription/confirm.php'
 $mailerClass = $require('lib/mailing/prod/mailer');
 $mailerInstance = new $mailerClass(); // the full class name contains a dynamic namespace, but you don't have to deal with this
@@ -344,11 +377,12 @@ Of course, they are some limitations with this system. Since PHP doesn't allow d
 (i.e. ```class SubClass extends $className```), you can't  inherit a class without using its hardcoded dynamic namespace.
 
 These namespaces naming scheme is : "\CommonJS\Module\[Module ID]", where the Module ID slashes are replaced with backslashes and
-special chars replaced with underscores.
+special chars replaced with underscores.  
 For example, a ```UserCheck``` class declared in a "lib/services/user-check" Module will have this full class name:  
 _\CommonJS\Module\lib\services\user_check\UserCheck_
 
-See unit tests for a sample of this dynamic namespacing hardcoded usage.
+You can look at the "tests/module-dir/classes/package/foo-subclass.php" PHP unit test class to see a sample of this
+dynamic namespacing hardcoded usage.
 
 
 ## More info

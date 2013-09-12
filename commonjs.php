@@ -21,6 +21,7 @@ return call_user_func(function()
         'basePath' => __DIR__,
         'modulesExt' => '.php',
         'folderAsModuleFileName' => 'index.php',
+        'autoNamespacing' => false,
     );
     $plugins = array(
         // Default plugins
@@ -127,17 +128,32 @@ return call_user_func(function()
         };
         $exports = array();
 
-        $moduleTrigger = function () use ($moduleFilePath, &$require, &$define, &$module, &$exports)
-        {
-            // Yes, you're right : I probably deserve death for this "eval()" usage...
-            // But I have not been able to find another way of using properly isolated classes in this CommonJS Modules PHP implementation :-)
-            $moduleDynamicNamespace = 'CommonJS\Module' . str_replace('/', '\\', $module['id']);
-            $moduleDynamicNamespace = preg_replace('|[\s-]|i', '_', $moduleDynamicNamespace);
-            $moduleFileContent = file_get_contents($moduleFilePath);
-            $moduleFileContent = 'namespace '.$moduleDynamicNamespace.'; ?>'.$moduleFileContent;
+        if ($config['autoNamespacing']) {
 
-            eval($moduleFileContent);
-        };
+            $moduleTrigger = function () use ($moduleFilePath, &$require, &$define, &$module, &$exports)
+            {
+                // Yes, you're right : I probably deserve death for this "eval()" usage...
+                // But I have not been able to find another way of using properly isolated classes in this CommonJS Modules PHP implementation :-)
+                // 1) Let's create a unique namespace, based on the Module ID and prefixed with "CommonJS\Module"
+                $moduleDynamicNamespace = 'CommonJS\Module' . str_replace('/', '\\', $module['id']);
+                $moduleDynamicNamespace = preg_replace('|[\s-]|i', '_', $moduleDynamicNamespace);
+                // 2) The PHP Module file content is read...
+                $moduleFileContent = file_get_contents($moduleFilePath);
+                // 3) ...and we add a dynamic namespace before it
+                $moduleFileContent = 'namespace '.$moduleDynamicNamespace.'; ?>'.$moduleFileContent;
+                // 4) Now we can actually trigger this PHP Module code, properly isolated in a unique namespace!
+                eval($moduleFileContent);
+            };
+
+        } else {
+
+            $moduleTrigger = function () use ($moduleFilePath, &$require, &$define, &$module, &$exports)
+            {
+                include $moduleFilePath;
+            };
+
+        }
+
 
         // Go!
         $previousResolvedModuleDir = $_currentResolvedModuleDir;//current dir backup...
